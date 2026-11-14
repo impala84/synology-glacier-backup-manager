@@ -1,3 +1,3 @@
 """Application release marker used by the optional update check."""
 
-VERSION = "2026.11.14.12"
+VERSION = "2026.11.14.13"

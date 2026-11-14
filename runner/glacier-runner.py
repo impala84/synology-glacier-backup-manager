@@ -419,6 +419,10 @@ class ChangeIndex:
         if mapping_id in self.unwatched:
             RUNNER_PROGRESS["index_reason"] = "filesystem watch capacity was unavailable"
             return self.baseline(mapping, config, signature, cancel_check)
+        days = config.get("schedule", {}).get("full_scan_days", 0)
+        if days and row[2] and time.time() - row[2] > days * 86400 - 3600:
+            RUNNER_PROGRESS["index_reason"] = f"scheduled full scan (every {days} day{'s' if days != 1 else ''})"
+            return self.baseline(mapping, config, signature, cancel_check)
         if getattr(self, "catchup_since", None) is not None and mapping_id not in self.caught_up:
             RUNNER_PROGRESS["index_reason"] = "catching up on changes made while the runner was away"
             self.catch_up(mapping, config, self.catchup_since, cancel_check)

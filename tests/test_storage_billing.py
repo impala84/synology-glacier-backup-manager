@@ -125,5 +125,36 @@ class IndexCatchUpTests(unittest.TestCase):
             self.assertEqual(len(index.db.execute("SELECT path FROM directories WHERE mapping_id='m1'").fetchall()), 3)
 
 
+class FullScanIntervalTests(unittest.TestCase):
+    def _index(self, reconciled_ago):
+        import sqlite3, threading
+        index = object.__new__(runner.ChangeIndex); index.lock = threading.RLock(); index.unwatched = set()
+        index.db = sqlite3.connect(":memory:")
+        index.db.execute("CREATE TABLE mappings (id TEXT PRIMARY KEY, signature TEXT, initialized INTEGER, reconciled_at REAL)")
+        mapping = {"id": "m1", "source": "/volume3/Test", "exclusions": []}
+        config = json.loads(json.dumps(DEFAULT_CONFIG))
+        index.db.execute("INSERT INTO mappings VALUES('m1',?,1,?)", (index.signature(mapping, config), runner.time.time() - reconciled_ago))
+        return index, mapping, config
+
+    def test_due_full_scan_rebuilds_the_index(self):
+        index, mapping, config = self._index(8 * 86400); config["schedule"]["full_scan_days"] = 7
+        with patch.object(index, "baseline", return_value=("list", 1)) as baseline:
+            index.ensure_mapping(mapping, config)
+        baseline.assert_called_once()
+
+    def test_not_yet_due_or_off_does_not_rebuild(self):
+        for days, ago in ((7, 3 * 86400), (0, 90 * 86400)):
+            index, mapping, config = self._index(ago); config["schedule"]["full_scan_days"] = days
+            with patch.object(index, "baseline") as baseline, patch.object(index, "candidates", return_value=("l", 0)):
+                index.ensure_mapping(mapping, config)
+            baseline.assert_not_called()
+
+    def test_interval_must_be_a_known_choice(self):
+        config = json.loads(json.dumps(DEFAULT_CONFIG)); config["schedule"]["full_scan_days"] = 5
+        with self.assertRaises(ValueError): validate_config(config)
+        for ok in (0, 1, 7, 30):
+            config["schedule"]["full_scan_days"] = ok; validate_config(config)
+
+
 if __name__ == "__main__":
     unittest.main()

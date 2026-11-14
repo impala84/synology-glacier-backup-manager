@@ -15,7 +15,7 @@
     #run-detail #detail-meta{grid-template-columns:110px 1fr;margin-bottom:18px}
     #detail-log{font-size:12px;line-height:1.5;max-height:58vh;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;background:#f6f8fa;border:1px solid #dce4ec;border-radius:10px;padding:16px;color:#33465b}
     .badge.cancelled,.badge.interrupted,.badge.cancelling{background:#fff1dd;color:#945b00}
-    #installation select{width:100%;font:inherit;color:#102238;background:white;border:1px solid #cad8e6;border-radius:10px;padding:12px;margin-top:7px}
+    #installation select,#schedule select{width:100%;font:inherit;color:#102238;background:white;border:1px solid #cad8e6;border-radius:10px;padding:12px;margin-top:7px}
     #rclone-config-status dl{display:grid;grid-template-columns:140px 1fr;gap:7px 14px;margin:12px 0 0}#rclone-config-status dt{color:#63758a}#rclone-config-status dd{margin:0;overflow-wrap:anywhere}
     .installation-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}.installation-grid .form-panel{max-width:none}#refresh-rclone{margin-top:14px}#installation details{margin-top:28px}
     @media(max-width:1050px){.installation-grid{grid-template-columns:1fr}}
@@ -136,7 +136,8 @@
             <p class="eyebrow">NIGHTLY WINDOW</p><h3>Backup schedule</h3>
             <div class="form-grid"><label>Run time<input type="time" id="schedule-time"></label><label>Recent modification window<div class="suffix"><input type="number" id="max-age" min="1" max="720"><span>hours</span></div></label></div>
             <label class="switch"><input type="checkbox" id="schedule-enabled"><span></span>Enable nightly backups</label>
-            <p class="hint">If the NAS or manager is offline at the run time, the backup starts when it returns, up to six hours later.</p>
+            <label>Full scan<select id="full-scan"><option value="0">Never (only catch up after restarts)</option><option value="1">Daily</option><option value="7">Weekly</option><option value="30">Monthly</option></select></label>
+            <p class="hint">A full scan re-reads every file's details, which can take about an hour, and also catches files edited in place while the runner was away. If the NAS or manager is offline at the run time, the backup starts when it returns, up to six hours later.</p>
             <div class="save-row"><button class="primary" id="save-schedule">Save safety and schedule</button><span id="schedule-save-state" class="unsaved-state"></span></div>
           </div>
           <div class="schedule-side">

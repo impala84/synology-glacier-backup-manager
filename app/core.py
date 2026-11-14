@@ -21,7 +21,7 @@ DEFAULT_CONFIG = {
     "remote": REMOTE,
     "bucket": BUCKET,
     "rclone_config": CONFIG_PATH,
-    "schedule": {"enabled": False, "time": "02:00", "max_age_hours": 48},
+    "schedule": {"enabled": False, "time": "02:00", "max_age_hours": 48, "full_scan_days": 0},
     "safety": {"paused": True},
     "performance": {
         "scan_batch_entries": 100, "scan_pause_ms": 50,
@@ -162,6 +162,8 @@ def validate_config(config: dict) -> None:
         raise ValueError("Storage price must be greater than 0 and at most 1 USD per GB-month")
     if not isinstance(cost.get("auto_measure"), bool):
         raise ValueError("Invalid automatic storage measurement setting")
+    if config.get("schedule", {}).get("full_scan_days", 0) not in (0, 1, 7, 30):
+        raise ValueError("Full scan interval must be off, daily, weekly or monthly")
     hours = int(config.get("schedule", {}).get("max_age_hours", 0))
     if not 1 <= hours <= 720:
         raise ValueError("Modification window must be between 1 and 720 hours")

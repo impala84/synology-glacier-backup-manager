@@ -488,7 +488,7 @@ class Handler(BaseHTTPRequestHandler):
             if self.path == "/api/settings":
                 schedule = data.get("schedule", {})
                 previous_schedule = dict(config["schedule"])
-                config["schedule"].update({k: schedule[k] for k in ("enabled", "time", "max_age_hours") if k in schedule})
+                config["schedule"].update({k: schedule[k] for k in ("enabled", "time", "max_age_hours", "full_scan_days") if k in schedule})
                 if isinstance(data.get("safety", {}).get("paused"), bool):
                     config.setdefault("safety", {})["paused"] = data["safety"]["paused"]
                 if "performance" in data:
