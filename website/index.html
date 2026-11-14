@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A simple, self-hosted interface for choosing what to back up, previewing jobs and sending files from Synology to Amazon S3.">
+  <title>Glacier Backup Manager</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="refinements.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="#top" aria-label="Glacier Backup Manager home"><img src="assets/glacier-mark.svg" alt=""><span><strong>Glacier Backup</strong><small>Manager for Synology</small></span></a>
+    <button class="menu" type="button" aria-expanded="false" aria-controls="nav">Menu</button>
+    <nav id="nav" aria-label="Main navigation">
+      <a href="#why">Why</a><a href="#how">How it works</a><a href="#controls">Controls</a><a href="#installation">Installation</a><a href="#security">Security</a>
+      <a class="nav-cta" href="https://github.com/impala84/synology-glacier-backup-manager">View on GitHub</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">SYNOLOGY → S3 GLACIER DEEP ARCHIVE</p>
+        <h1>Back up your Synology to Glacier Deep Archive.</h1>
+        <p class="lede">A simple, self-hosted interface for choosing what to back up, previewing jobs and sending files to Amazon S3.</p>
+        <div class="hero-actions"><a class="button primary" href="#installation">Build your installation</a><a class="button secondary" href="#how">See how it works</a></div>
+      </div>
+      <figure class="hero-shot"><img src="assets/overview-window.png" alt="An anonymised Glacier Backup Manager overview showing a live TAR job"></figure>
+    </section>
+
+    <section class="section story" id="why">
+      <div><h2>Deep Archive is cheap. Getting files there efficiently isn’t.</h2></div>
+      <div class="story-copy"><p>Synology Cloud Sync can generate a large number of S3 requests when checking a big NAS.</p><p>rclone is more efficient, but managing folders and exclusions from the command line can be cumbersome.</p><p>Glacier Backup Manager adds a simple interface on top: choose your folders, preview the job and run it.</p></div>
+    </section>
+
+    <section class="section" id="how">
+      <h2>How it works</h2>
+      <div class="flow">
+        <article><span>01</span><h3>Connect S3</h3><p>Connect an rclone remote to your S3 bucket.</p></article>
+        <article><span>02</span><h3>Choose folders</h3><p>Select exactly what should be backed up or excluded.</p></article>
+        <article><span>03</span><h3>Run the backup</h3><p>Preview with a dry run, then run immediately or on a schedule.</p></article>
+        <article><span>04</span><h3>Move to Deep Archive</h3><p>Your S3 lifecycle rule moves uploaded files into Glacier Deep Archive.</p></article>
+      </div>
+      <div class="note">The manager does not create your AWS account, S3 bucket or lifecycle rules.</div>
+    </section>
+
+    <section class="section task-section" id="folders">
+      <div class="task-copy"><h2>Back up selected folders</h2><p>Choose only the folders you want to protect. Exclude individual subfolders and preview everything before uploading.</p><ul><li>Source volumes are mounted read-only</li><li>Files already in S3 are skipped</li><li>Individual files or folders can be added to the next backup</li></ul></div>
+      <figure class="plain-shot folder-shot"><img src="assets/folder-selection-landscape.png" alt="An anonymised folder browser with selected and excluded backup folders"></figure>
+    </section>
+
+    <section class="section task-section task-section-reverse" id="tar">
+      <figure class="plain-shot"><img src="assets/tar-archives.png" alt="Select folders and configure a dated TAR archive"></figure>
+      <div class="task-copy"><h2>Create TAR archives</h2><p>Package folders as dated TAR or TAR.GZ archives before uploading them.</p><p>This is useful for folders containing lots of small files.</p><ul><li>Original files are never changed</li><li>Free temporary space is checked first</li><li>Local archives are removed only after a successful upload</li></ul></div>
+    </section>
+
+    <section class="section controls" id="controls">
+      <article class="control-card">
+        <div class="control-copy"><h2>Schedule backups</h2><p>Choose when backups run and how far back the recent-file scan should look.</p><p>Scheduled and manual jobs can be paused without deleting your setup.</p></div>
+        <figure><img src="assets/schedule.png" alt="Nightly backup schedule and modification window"></figure>
+      </article>
+      <article class="control-card">
+        <div class="control-copy"><h2>Control NAS usage</h2><p>Limit scan speed, CPU usage, bandwidth and AWS request rates.</p><p>You can also set a temperature limit so backups pause while the NAS cools.</p></div>
+        <figure><img src="assets/settings.png" alt="CPU, temperature, bandwidth and AWS request controls"></figure>
+      </article>
+    </section>
+
+    <section class="section installation" id="installation">
+      <div class="installation-heading"><h2>Installation</h2><p>Tell the installer how your Synology is set up. It will generate the container configuration and DSM runner command for you.</p></div>
+
+      <div class="installation-tabs" role="tablist" aria-label="Installation steps">
+        <button type="button" role="tab" id="install-tab-1" aria-controls="install-panel-1" aria-selected="true" data-install-tab="install-panel-1"><span>1</span><strong>Describe your NAS</strong><small>Choose your volumes and S3 destination</small></button>
+        <button type="button" role="tab" id="install-tab-2" aria-controls="install-panel-2" aria-selected="false" tabindex="-1" data-install-tab="install-panel-2"><span>2</span><strong>Deploy</strong><small>Run the generated container project</small></button>
+        <button type="button" role="tab" id="install-tab-3" aria-controls="install-panel-3" aria-selected="false" tabindex="-1" data-install-tab="install-panel-3"><span>3</span><strong>Sign in</strong><small>Create your administrator account</small></button>
+        <button type="button" role="tab" id="install-tab-4" aria-controls="install-panel-4" aria-selected="false" tabindex="-1" data-install-tab="install-panel-4"><span>4</span><strong>Start the runner</strong><small>Add the generated task to DSM</small></button>
+      </div>
+
+      <div class="installation-panel" id="install-panel-1" role="tabpanel" aria-labelledby="install-tab-1">
+        <form class="builder-form" id="install-builder">
+          <div class="panel-heading"><h3>Describe your NAS</h3><p>Nothing entered here is sent anywhere. The files are generated in this browser.</p></div>
+          <label>Installation volume
+            <select id="install-volume">
+              <option value="volume1">/volume1</option><option value="volume2">/volume2</option><option value="volume3">/volume3</option><option value="volume4">/volume4</option>
+            </select>
+          </label>
+          <fieldset>
+            <legend>Volumes containing folders to back up</legend>
+            <div class="volume-options">
+              <label><input type="checkbox" name="source-volume" value="volume1" checked><span>/volume1</span></label>
+              <label><input type="checkbox" name="source-volume" value="volume2"><span>/volume2</span></label>
+              <label><input type="checkbox" name="source-volume" value="volume3" checked><span>/volume3</span></label>
+              <label><input type="checkbox" name="source-volume" value="volume4"><span>/volume4</span></label>
+            </div>
+          </fieldset>
+          <label>S3 bucket name<input id="install-bucket" value="my-archive-bucket" autocomplete="off" spellcheck="false"></label>
+          <div class="builder-fields">
+            <label>Timezone<input id="install-timezone" value="UTC" autocomplete="off" spellcheck="false"></label>
+            <label>Web port<input id="install-port" type="number" value="8787" min="1024" max="65535"></label>
+          </div>
+          <label>rclone configuration path<input id="install-rclone" value="/volume1/@rclone/rclone.conf" autocomplete="off" spellcheck="false"></label>
+          <p class="builder-error" id="builder-error" role="status" hidden>Select at least one source volume.</p>
+        </form>
+      </div>
+
+      <div class="installation-panel" id="install-panel-2" role="tabpanel" aria-labelledby="install-tab-2" hidden>
+        <div class="builder-output">
+          <fieldset class="deployment-picker">
+            <legend>How do you manage containers?</legend>
+            <div class="deployment-options">
+              <label><input type="radio" name="deployment-tool" value="portainer" checked><span><strong>Portainer</strong><small>Deploy with the stack web editor</small></span></label>
+              <label><input type="radio" name="deployment-tool" value="container-manager"><span><strong>Synology Container Manager</strong><small>Deploy as a Container Manager project</small></span></label>
+            </div>
+          </fieldset>
+          <div class="deployment-instructions" data-deployment-instructions="portainer">
+            <div class="panel-heading"><h3>Deploy with Portainer</h3><ol><li>In Synology File Station, create <code id="portainer-root-path">/volume1/docker/synology-glacier-backup-manager</code> with <code>data</code> and <code>logs</code> subfolders.</li><li>In Portainer, open <strong>Stacks → Add stack → Web editor</strong>.</li><li>Name the stack <code>glacier-backup-manager</code>.</li><li>Paste the generated file below and select <strong>Deploy the stack</strong>.</li></ol></div>
+          </div>
+          <div class="deployment-instructions" data-deployment-instructions="container-manager" hidden>
+            <div class="panel-heading"><h3>Deploy with Container Manager</h3><ol><li>In Synology File Station, create <code id="container-manager-root-path">/volume1/docker/synology-glacier-backup-manager</code> with <code>data</code> and <code>logs</code> subfolders.</li><li>In DSM, open <strong>Container Manager → Project → Create</strong>.</li><li>Name the project <code>glacier-backup-manager</code> and select that folder as the project path.</li><li>Select <strong>Create docker-compose.yml</strong>, paste the generated file below, then choose <strong>Next → Done</strong>.</li></ol></div>
+          </div>
+          <div class="code-block stack-code">
+            <div class="code-actions"><button type="button" data-download-target="stack-output" data-download-name="compose.yaml">Download compose.yaml</button><button type="button" data-copy-target="stack-output">Copy compose file</button></div>
+            <pre><code id="stack-output"></code></pre>
+          </div>
+          <p class="output-note">The selected source volumes are mounted read-only. Only the manager’s data and log folders are writable.</p>
+        </div>
+      </div>
+
+      <div class="installation-panel" id="install-panel-3" role="tabpanel" aria-labelledby="install-tab-3" hidden>
+        <div class="signin-step">
+          <div class="panel-heading"><h3>Open the manager and sign in</h3><p>After <span id="deployment-tool-name">Portainer</span> finishes building the stack, open <code id="manager-address">http://your-nas:8787</code>. Create the local administrator account, then leave the backup engine paused until the test upload is verified.</p></div>
+          <figure class="signin-shot"><img src="assets/first-sign-in.png" alt="Glacier Backup Manager sign-in screen with empty username and password fields"></figure>
+        </div>
+      </div>
+
+      <div class="installation-panel" id="install-panel-4" role="tabpanel" aria-labelledby="install-tab-4" hidden>
+        <div class="runner-setup">
+          <div class="runner-copy">
+            <div class="panel-heading"><h3>Add the runner task in Synology DSM</h3><p>Open <strong>Control Panel → Task Scheduler</strong>. Create a <strong>Triggered Task → User-defined script</strong>, run it as your dedicated backup user and set the event to <strong>Boot-up</strong>.</p></div>
+            <div class="code-block">
+              <div class="code-actions"><button type="button" data-copy-target="runner-command">Copy command</button></div>
+              <pre><code id="runner-command"></code></pre>
+            </div>
+            <p class="runner-note">Run the task manually once after installation. Then add one harmless folder, run a dry run, upload one uniquely named test file and confirm it appears in S3.</p>
+            <a class="text-link" href="https://github.com/impala84/synology-glacier-backup-manager#deployment-sequence">Read the full installation reference →</a>
+          </div>
+          <figure class="setup-shot"><img src="assets/dsm-task-scheduler.png" alt="Synology DSM Task Scheduler showing the runner as a user-defined boot-up script"></figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="section security" id="security">
+      <div><h2>Security</h2><p>Glacier Backup Manager is self-hosted software, not a managed backup service. You remain responsible for your AWS account, NAS access, lifecycle rules and restores.</p></div>
+      <div class="security-list">
+        <article><h3>Secure local login</h3><p>Administrator passwords must meet minimum security requirements and are stored as salted PBKDF2-SHA256 hashes.</p></article>
+        <article><h3>Protected sessions</h3><p>Sessions use HttpOnly cookies, SameSite protection and CSRF tokens. Login attempts are rate-limited.</p></article>
+        <article><h3>AWS credentials stay private</h3><p>Stored AWS secrets are not displayed in the web interface and are passed securely to rclone when required.</p></article>
+        <article><h3>No remote deletion</h3><p>Backups use copy operations only. Glacier Backup Manager does not expose remote delete or destructive sync commands.</p></article>
+      </div>
+      <div class="warning"><strong>Do not expose the application directly to the public internet.</strong> Keep it on a trusted network or behind HTTPS and appropriate access controls. Review <a href="https://github.com/impala84/synology-glacier-backup-manager/blob/main/SECURITY.md">SECURITY.md</a> before deployment.</div>
+    </section>
+
+    <section class="section aws-reminders-band" aria-labelledby="aws-reminders-title">
+      <div class="aws-reminders">
+      <div class="reminder-tab">Please remember</div>
+      <div class="reminder-heading">
+        <h2 id="aws-reminders-title">Before you rely on your backup</h2>
+        <p>Complete these AWS safeguards before relying on Glacier Backup Manager.</p>
+      </div>
+      <div class="reminder-grid">
+        <article>
+          <span class="reminder-number">1</span>
+          <div>
+            <h3>Set an S3 lifecycle rule</h3>
+            <p>Glacier Backup Manager uploads files to S3. AWS then needs a lifecycle rule to move them into Glacier Deep Archive.</p>
+            <ol>
+              <li>Open your S3 bucket.</li>
+              <li>Go to <strong>Management → Lifecycle rules</strong>.</li>
+              <li>Create a rule for the whole bucket or your backup prefix.</li>
+              <li>Add a transition to <strong>S3 Glacier Deep Archive</strong>.</li>
+              <li>Save the rule and confirm uploaded objects transition correctly.</li>
+            </ol>
+            <a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/how-to-set-lifecycle-configuration-intro.html">AWS guide to creating an S3 Lifecycle rule →</a>
+          </div>
+        </article>
+        <article>
+          <span class="reminder-number">2</span>
+          <div>
+            <h3>Set an AWS Budget alert</h3>
+            <p>Create an AWS Budget so unexpected storage, request or restore costs do not go unnoticed.</p>
+            <ol>
+              <li>Open <strong>Billing and Cost Management → Budgets</strong>.</li>
+              <li>Create a monthly cost budget.</li>
+              <li>Set your expected spending limit.</li>
+              <li>Add email alerts for actual and forecast spending.</li>
+            </ol>
+            <a href="https://docs.aws.amazon.com/cost-management/latest/userguide/budgets-create.html">AWS guide to creating a budget →</a>
+          </div>
+        </article>
+      </div>
+        <p class="reminder-footnote"><strong>Worth knowing:</strong> S3 lifecycle rules do not normally transition objects smaller than 128 KB by default. Glacier Deep Archive also has a 180-day minimum storage period and restores are not immediate. For folders containing many small files, TAR archives can reduce the number of objects stored.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <div class="footer-brand"><img src="assets/glacier-mark.svg" alt=""><span><strong>Glacier Backup Manager</strong><small>Independent open-source software for Amazon S3 and Synology NAS.</small></span></div>
+    <div class="compatibility"><span>Amazon S3</span><span class="compatibility-x" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M5 5l14 14M19 5L5 19"></path></svg></span><span>Synology</span></div>
+    <p>Not affiliated with, sponsored by or endorsed by Amazon Web Services or Synology.</p>
+    <p>© 2026 Glacier Backup Manager contributors · <a href="https://github.com/impala84/synology-glacier-backup-manager/blob/main/LICENSE">MIT License</a></p>
+  </footer>
+  <script src="install-builder.js"></script>
+</body>
+</html>

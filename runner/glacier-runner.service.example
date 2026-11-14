@@ -1,0 +1,16 @@
+[Unit]
+Description=Synology Glacier Backup Manager runner
+After=network-online.target
+
+[Service]
+Type=simple
+User=glacier-backup
+ExecStart=/usr/bin/python3 /volume1/docker/synology-glacier-backup-manager/data/runner/glacier-runner.py \
+  --remote aws-archive --bucket YOUR-BUCKET-NAME --rclone-config /volume1/@rclone/rclone.conf
+NoNewPrivileges=true
+PrivateTmp=true
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,51 @@
+services:
+  glacier-backup-manager:
+    # Built locally from this repository. There is deliberately no `image:` line: no image is
+    # published to a registry, so "Re-pull image" in Portainer would fail with "manifest unknown".
+    build:
+      context: .
+    pull_policy: build
+    container_name: synology-glacier-backup-manager
+    restart: unless-stopped
+    # Synology shares under volume3 can have different ACLs. Root is required
+    # only for traversal; the entire source mount remains read-only.
+    user: "0:0"
+    environment:
+      TZ: ${TZ:-Asia/Singapore}
+      GBM_BUCKET: ${GBM_BUCKET:?Set GBM_BUCKET in .env}
+      GBM_REMOTE: ${GBM_REMOTE:-aws-archive}
+      GBM_RCLONE_CONFIG: ${GBM_RCLONE_CONFIG:-/volume1/@rclone/rclone.conf}
+      GBM_DATA_DIR: /data
+      GBM_LOG_DIR: /logs
+      GBM_PORT: "8787"
+      # Set to true ONLY behind a reverse proxy you control: enables X-Forwarded-For/-Proto handling.
+      GBM_TRUST_PROXY: ${GBM_TRUST_PROXY:-false}
+      # Extra folders (colon separated) that can never be a backup source.
+      GBM_PROTECTED_PATHS: ${GBM_PROTECTED_PATHS:-}
+      # The UI may browse volume1 and volume3, but jobs remain allow-list based and only
+      # process folders explicitly mapped by the user.
+      GBM_BROWSE_ROOTS: ${GBM_BROWSE_ROOTS:-/volume1:/volume3}
+      # host_path=container_path pairs, separated by commas.
+      GBM_SOURCE_MOUNTS: ${GBM_SOURCE_MOUNTS:-/volume1=/sources/volume1,/volume3=/sources/volume3}
+    # Tip: mount only the shares you back up (for example /volume3/Photos) instead of whole
+    # volumes, so the container cannot read unrelated data such as /volume1/@rclone.
+    volumes:
+      - /volume1/docker/synology-glacier-backup-manager/data:/data:rw
+      - /volume1/docker/synology-glacier-backup-manager/logs:/logs:rw
+      - /volume1:/sources/volume1:ro
+      - /volume3:/sources/volume3:ro
+    ports:
+      - "8787:8787"
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"

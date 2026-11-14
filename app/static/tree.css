@@ -1,0 +1,46 @@
+.folder-tree {
+  margin-top: 18px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  min-height: 320px;
+  padding: 8px;
+  background: #fbfcfe;
+}
+
+.tree-children { margin-left: 25px; }
+.tree-node[hidden] { display: none; }
+.tree-row {
+  display: grid;
+  grid-template-columns: 28px 28px minmax(0, 1fr);
+  align-items: center;
+  min-height: 44px;
+  border-radius: 8px;
+  padding: 2px 8px 2px 2px;
+}
+.tree-row:hover { background: var(--ice); }
+.tree-toggle {
+  border: 0;
+  background: transparent;
+  color: #5e6b79;
+  width: 28px;
+  height: 32px;
+  font-size: 18px;
+}
+.tree-check, .archive-tree-check { width: 20px; height: 20px; margin: 0; accent-color: var(--blue); }
+.tree-label { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.tree-label .tree-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.archive-marker { display:inline-block; width:8px; height:8px; flex:0 0 8px; border-radius:50%; background:var(--blue); box-shadow:0 0 0 3px rgba(23,105,224,.12); cursor:help; }
+.archive-legend { display:flex; align-items:center; gap:9px; margin:10px 0 14px; color:var(--muted); font-size:.78rem; }
+.tree-folder { position: relative; width: 24px; height: 16px; flex: 0 0 24px; border-radius: 3px; background: linear-gradient(#ffd45b,#f3b82a); box-shadow: inset 0 0 0 1px rgba(166,108,0,.2),0 1px 1px rgba(90,62,0,.08); }
+.tree-folder:before { content: ''; position: absolute; left: 0; top: -3px; width: 13px; height: 4px; border-radius: 3px 3px 0 0; background: #efb526; box-shadow: inset 0 1px rgba(255,255,255,.2); }
+.tree-loading, .tree-error { color: var(--muted); padding: 10px 38px; }
+.tree-error { color: var(--red); }
+.draft-mappings { display: grid; gap: 12px; margin: 18px 0; max-height: 430px; overflow: auto; }
+.draft-empty { color: var(--muted); padding: 18px 0; }
+.draft-item { border: 1px solid var(--line); border-radius: 10px; padding: 12px; background: #f8fafc; }
+.draft-item strong { display: block; overflow-wrap: anywhere; font-size: .86rem; margin-bottom: 8px; }
+.draft-item label { margin: 0; }
+.draft-item input { padding: 9px; }
+.coverage{color:var(--muted);font-size:.78rem;margin:-2px 0 8px}.exception-list{margin:0 0 10px;padding-left:20px;color:var(--red);font-size:.8rem}.exception-list li{margin:3px 0}
+.folder-workspace { grid-template-columns: minmax(0, 1.4fr) minmax(330px, .8fr); }
+@media(max-width:850px){.folder-workspace{grid-template-columns:1fr}.tree-children{margin-left:16px}}

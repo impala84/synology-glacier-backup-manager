@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Synology Glacier Backup Manager</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/brand.css">
+  <link rel="stylesheet" href="/browser.css">
+  <link rel="stylesheet" href="/tree.css">
+  <link rel="stylesheet" href="/auth.css">
+  <link rel="stylesheet" href="/polish.css">
+  <style>
+    #run-detail{width:min(1100px,calc(100vw - 48px));max-width:none;max-height:88vh}
+    #run-detail #detail-meta{grid-template-columns:110px 1fr;margin-bottom:18px}
+    #detail-log{font-size:12px;line-height:1.5;max-height:58vh;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;background:#f6f8fa;border:1px solid #dce4ec;border-radius:10px;padding:16px;color:#33465b}
+    .badge.cancelled,.badge.interrupted,.badge.cancelling{background:#fff1dd;color:#945b00}
+    #installation select{width:100%;font:inherit;color:#102238;background:white;border:1px solid #cad8e6;border-radius:10px;padding:12px;margin-top:7px}
+    #rclone-config-status dl{display:grid;grid-template-columns:140px 1fr;gap:7px 14px;margin:12px 0 0}#rclone-config-status dt{color:#63758a}#rclone-config-status dd{margin:0;overflow-wrap:anywhere}
+    .installation-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}.installation-grid .form-panel{max-width:none}#refresh-rclone{margin-top:14px}#installation details{margin-top:28px}
+    @media(max-width:1050px){.installation-grid{grid-template-columns:1fr}}
+    @media(max-width:600px){#run-detail{width:calc(100vw - 24px);padding:18px}#detail-log{font-size:11px;padding:12px}}
+    .nav-divider{display:block;height:1px;background:#29435d;margin:10px 12px}.nav-section{display:block;padding:10px 14px 2px;color:#718ba4;font-size:.62rem;font-weight:800;letter-spacing:.15em;text-transform:uppercase}.nav-icon{display:inline-grid;width:22px;margin-right:8px;place-items:center;font-size:1.05rem;color:#8fb7dc}.folder-icon{position:relative;height:14px;border-radius:3px;background:#eeb52e}.folder-icon:before{content:"";position:absolute;left:1px;top:-4px;width:9px;height:5px;border-radius:2px 2px 0 0;background:#f5c64d}nav button{display:flex;align-items:center}select{font:inherit;color:#102033;background:white;border:1px solid #cbd7e3;border-radius:9px;padding:11px;width:100%}.badge.archiving{background:#eaf3ff;color:#0d5dbd}
+    .job-summary{display:grid;gap:10px;margin:18px 0}.summary-group{border:1px solid #dce4ec;border-radius:10px;padding:14px}.summary-group h4{margin:0 0 10px}.summary-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;padding:8px 0;border-top:1px solid #edf1f5}.summary-item:first-of-type{border-top:0}.summary-item code{font:inherit;overflow-wrap:anywhere}.summary-item small{color:#657487;text-align:right}.diagnostic-log{margin-top:18px}.diagnostic-log summary{font-weight:700;cursor:pointer;color:#1769e0}.diagnostic-log[open] summary{margin-bottom:12px}
+    .performance-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}.performance-card{max-width:none}.performance-card .form-grid{grid-template-columns:1fr 1fr}.range-field{gap:10px}.range-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px}.range-value{color:var(--blue);font-size:1rem}.range-field input[type=range]{padding:0;border:0;accent-color:var(--blue)}.setting-note{min-height:42px}.settings-savebar{display:flex;align-items:center;gap:14px;margin:8px 0 32px}.unsaved-state{color:var(--muted);font-size:.85rem}.unsaved-state.dirty{color:#9a6200;font-weight:700}@media(max-width:1050px){.performance-grid{grid-template-columns:1fr}}@media(max-width:600px){.performance-card .form-grid{grid-template-columns:1fr}.setting-note{min-height:0}}
+    .password-rules[hidden],.auth-forgot[hidden]{display:none}.auth-brandbar{margin-bottom:28px}.auth-product{display:flex;align-items:center;gap:11px;min-width:0}.auth-product img{width:48px;height:48px;border-radius:11px}.auth-product strong{display:block;font-size:1rem;line-height:1.1}.auth-product small{display:block;color:#718197;font-size:.72rem;margin-top:3px}.auth-partners{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:20px;padding-top:20px;border-top:1px solid #e7ebef;color:#555}.auth-partners>b{font-size:1.45rem;line-height:1;font-weight:400}.aws-mark,.synology-mark{display:block;background:#555}.aws-mark{width:48px;height:32px;-webkit-mask:url('/aws-2025.svg') center/contain no-repeat;mask:url('/aws-2025.svg') center/contain no-repeat}.synology-mark{width:76px;height:24px;-webkit-mask:url('/synology-logo.svg') center/contain no-repeat;mask:url('/synology-logo.svg') center/contain no-repeat}.auth-forgot{display:block;margin:10px auto 0;border:0;background:transparent;color:#657487;font-size:.76rem;font-weight:600;padding:5px}.auth-forgot:hover{color:#1769e0;text-decoration:underline}#password-reset{width:min(620px,calc(100vw - 32px));max-width:none}#password-reset-command{font-size:.78rem;background:#f6f8fa;border:1px solid #dce4ec;border-radius:10px;padding:14px;overflow-wrap:anywhere}@media(max-width:520px){.auth-product small{display:none}.auth-partners{gap:11px}.aws-mark{width:43px;height:29px}.synology-mark{width:68px;height:22px}}
+    .icon-sprite{position:absolute;width:0;height:0;overflow:hidden}nav .nav-icon{display:block;flex:0 0 23px;width:23px;height:23px;margin-right:11px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;color:#8fb7dc}nav button.active .nav-icon,nav button:hover .nav-icon{color:#b9dcfb}
+    @media(max-width:850px){.nav-divider{width:1px;height:auto;min-height:32px;margin:5px 8px}.nav-icon{width:18px;margin-right:5px}}
+  </style>
+</head>
+<body>
+  <svg class="icon-sprite" aria-hidden="true">
+    <symbol id="nav-home" viewBox="0 0 24 24"><path d="M3.8 10.7 12 3.8l8.2 6.9v8.8H14v-5.7h-4v5.7H3.8z"/></symbol>
+    <symbol id="nav-folder" viewBox="0 0 24 24"><path d="M3 7.5h7l1.8 2H21v8.8a1.7 1.7 0 0 1-1.7 1.7H4.7A1.7 1.7 0 0 1 3 18.3z"/><path d="M3 9.5V6.7A1.7 1.7 0 0 1 4.7 5h4.7l1.8 2H19"/></symbol>
+    <symbol id="nav-archive" viewBox="0 0 24 24"><path d="M5.5 5.5h5l1.5 1.7h6.5v2.3"/><path d="M3.3 8.5h7l1.5 1.8h8.9v7.9a1.8 1.8 0 0 1-1.8 1.8H5.1a1.8 1.8 0 0 1-1.8-1.8z"/><path d="M7.5 3h4.3l1.4 1.5h4"/></symbol>
+    <symbol id="nav-activity" viewBox="0 0 24 24"><path d="M2.8 12h4.1l2.3-5.2 4.1 10.4 2.4-5.2h5.5"/></symbol>
+    <symbol id="nav-destination" viewBox="0 0 24 24"><ellipse cx="12" cy="5.5" rx="7.5" ry="2.8"/><path d="M4.5 5.5v6c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8v-6M4.5 11.5v6c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8v-6"/></symbol>
+    <symbol id="nav-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.2 13.5a7.8 7.8 0 0 0 0-3l2-1.2-2-3.4-2.1 1.2a8 8 0 0 0-2.6-1.5V3.2h-5v2.4a8 8 0 0 0-2.6 1.5L4.8 5.9l-2 3.4 2 1.2a7.8 7.8 0 0 0 0 3l-2 1.2 2 3.4 2.1-1.2a8 8 0 0 0 2.6 1.5v2.4h5v-2.4a8 8 0 0 0 2.6-1.5l2.1 1.2 2-3.4z"/></symbol>
+    <symbol id="nav-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3.8 2.2"/></symbol>
+    <symbol id="nav-install" viewBox="0 0 24 24"><path d="M12 3.5v11m-4-4 4 4 4-4M4 17v2.8h16V17"/></symbol>
+  </svg>
+  <div id="auth-gate" class="auth-gate" hidden>
+    <section class="auth-card" aria-labelledby="auth-title">
+      <div class="auth-brandbar"><div class="auth-product"><img src="/aws-s3-glacier.svg" alt=""><div><strong>Glacier Backup</strong><small>Backup Manager</small></div></div></div>
+      <h1 id="auth-title">Secure your archive manager</h1>
+      <p id="auth-intro" class="auth-intro">Create the administrator account for this installation.</p>
+      <form id="auth-form">
+        <label>Username<input id="auth-username" autocomplete="username" required minlength="3" maxlength="40"></label>
+        <label>Password<input id="auth-password" type="password" autocomplete="new-password" required minlength="12"></label>
+        <ul id="password-rules" class="password-rules">
+          <li data-rule="length">At least 12 characters</li><li data-rule="lower">A lowercase letter</li><li data-rule="upper">An uppercase letter</li><li data-rule="number">A number</li><li data-rule="symbol">A symbol</li>
+        </ul>
+        <p id="auth-error" class="auth-error" role="alert"></p>
+        <button class="primary full" id="auth-submit" type="submit">Create administrator</button>
+        <button class="auth-forgot" id="forgot-password" type="button" hidden>Forgot password?</button>
+        <div class="auth-partners" aria-label="AWS and Synology"><span class="aws-mark" role="img" aria-label="AWS"></span><b aria-hidden="true">×</b><span class="synology-mark" role="img" aria-label="Synology"></span></div>
+      </form>
+    </section>
+  </div>
+  <aside>
+    <div class="mobile-brand-row"><div class="brand"><span class="mark"><img src="/aws-s3-glacier.svg" alt="Amazon S3 Glacier"></span><div><strong>Glacier</strong><small>Backup Manager</small></div></div><button id="menu-toggle" class="menu-toggle" aria-label="Open navigation" aria-expanded="false" aria-controls="main-nav"><span></span><span></span><span></span></button></div>
+    <nav id="main-nav">
+      <button data-view="overview" class="active"><svg class="nav-icon" aria-hidden="true"><use href="#nav-home"/></svg>Overview</button>
+      <button data-view="activity"><svg class="nav-icon" aria-hidden="true"><use href="#nav-activity"/></svg>Activity</button>
+      <button data-view="sources"><svg class="nav-icon" aria-hidden="true"><use href="#nav-folder"/></svg>Source folders</button>
+      <button data-view="archive"><svg class="nav-icon" aria-hidden="true"><use href="#nav-archive"/></svg>TAR archive</button>
+      <button data-view="schedule"><svg class="nav-icon" aria-hidden="true"><use href="#nav-clock"/></svg>Schedule</button>
+      <button data-view="destination"><svg class="nav-icon" aria-hidden="true"><use href="#nav-destination"/></svg>S3 browser</button>
+      <span class="nav-divider" aria-hidden="true"></span>
+      <button data-view="settings"><svg class="nav-icon" aria-hidden="true"><use href="#nav-settings"/></svg>Settings</button>
+      <button data-view="installation"><svg class="nav-icon" aria-hidden="true"><use href="#nav-install"/></svg>Installation</button>
+    </nav>
+    <section class="sidebar-status" aria-label="Live backup status">
+      <p class="sidebar-label">CURRENT ACTIVITY</p>
+      <strong id="sidebar-job">Idle</strong>
+      <span id="sidebar-job-detail">No active job</span>
+      <div class="sidebar-reading"><span>Temperature</span><strong id="sidebar-temperature">—</strong></div>
+      <div class="sidebar-connection"><span id="sidebar-connection-dot"></span><div><strong id="sidebar-connection">Runner disconnected</strong><small id="signed-in-user"></small></div></div>
+      <button class="sidebar-update" id="update-notice" data-go="installation" type="button" hidden><span></span><strong>Update available</strong><small id="update-version"></small></button>
+      <button class="sidebar-logout" id="logout" type="button">Log out</button>
+    </section>
+  </aside>
+  <main>
+    <header><div><h1 id="title">Overview</h1></div><div class="header-actions"></div></header>
+    <section id="overview" class="view active">
+      <div class="active-banner" id="active-banner" role="status" hidden>
+        <div class="ab-row"><span class="ab-pulse" aria-hidden="true"></span><div class="ab-text"><strong id="ab-title">Backup in progress</strong><span id="subhead">Only explicitly selected folders are examined.</span></div><button class="ab-cancel" id="ab-details" type="button">View details</button><button class="ab-cancel" id="cancel-job" type="button" hidden>Cancel job</button></div>
+        <div id="upload-diagnostic" class="upload-diagnostic ab-progress" hidden><div><strong id="upload-percent">0%</strong><span id="upload-detail"></span></div><progress id="upload-progress" max="100" value="0"></progress></div>
+      </div>
+      <div class="ov-bar">
+        <span id="runner-state" class="runner-state disconnected">Runner disconnected</span>
+        <div class="actions"><button class="secondary" id="dry">Dry run</button><button class="primary" id="run">Run backup now</button></div>
+      </div>
+      <div class="ov-cards">
+        <article><small>Status</small><strong class="ov-status"><span class="ov-dot" id="ov-dot"></span><span id="headline">Protected</span></strong><span class="hint" id="ov-status-detail"></span></article>
+        <article><small>Last backup</small><strong id="last-success">—</strong><span class="hint" id="last-detail"></span></article>
+        <article><small>Next backup</small><strong id="next-run">—</strong><span class="hint" id="next-detail"></span></article>
+        <article id="storage-card"><div class="ov-card-head"><small>Stored in S3</small><span class="seg" id="cost-seg" role="group" aria-label="Cost view" hidden><button type="button" id="cost-est">Estimate</button><button type="button" id="cost-act">Actual</button></span></div><strong id="storage-size">—</strong><span class="hint" id="storage-cost-line"></span><span class="hint ov-foot" id="storage-detail"><span id="storage-detail-text">Not measured yet</span><button class="link-inline" id="measure-storage" type="button">Recalculate</button></span></article>
+      </div>
+      <div class="panel recent-panel"><div class="panel-head"><div><h3>Recent backups</h3></div><button class="link" data-go="activity">View all activity →</button></div><div class="table-wrap"><table class="recent-table"><thead><tr><th>When</th><th>Type</th><th>Result</th><th>Files</th><th>Size</th><th>Duration</th></tr></thead><tbody id="recent-runs"></tbody></table></div></div>
+    </section>
+    <section id="sources" class="view">
+      <div class="split folder-workspace"><div class="panel"><div class="panel-head"><div><p class="eyebrow">LOCAL NAS</p><h3>Select folders to protect</h3></div></div><p class="hint">Open only the branches you need, then tick individual folders. Unopened folders are not scanned.</p><p class="archive-legend"><span class="archive-marker" aria-hidden="true"></span> Previously TAR archived — hover over a dot for the date.</p><div id="folder-tree" class="folder-tree" role="tree" aria-label="NAS folders"></div></div>
+      <div class="panel sticky"><p class="eyebrow">SELECTION</p><h3>Archive destinations</h3><p class="hint">Confirm that each prefix matches the hierarchy Cloud Sync previously used.</p><div id="draft-mappings" class="draft-mappings"></div><button class="primary full" id="save-selection">Save selected folders</button></div></div>
+      <div class="panel"><div class="panel-head"><div><p class="eyebrow">ALLOW-LIST</p><h3>Configured mappings</h3></div></div><div id="mappings" class="mapping-list"></div></div>
+      <div class="panel"><div class="panel-head"><div><p class="eyebrow">MANUAL UPLOAD</p><h3>Upload now</h3></div><button class="secondary" id="refresh-upload-browser">Refresh</button></div><p class="hint">Choose one local file or folder inside an enabled source. This bypasses the recent-file window, while retaining every exclusion and skipping content already identical in AWS.</p><div id="upload-now-breadcrumbs" class="s3-breadcrumbs"></div><div id="upload-now-browser" class="s3-browser"><p class="empty">Open Source folders to browse.</p></div><div id="upload-now-selection" class="upload-now-selection" hidden><span></span><button class="primary" id="queue-upload-now">Upload now</button></div></div>
+      <div class="panel form-panel"><p class="eyebrow">FILE FILTERS</p><h3>Backup exclusions</h3><p class="hint">Optional rclone path patterns applied to every regular backup source. Use these only for file types or path patterns that should never be uploaded. Folder-specific exclusions are managed in the folder browser above.</p><textarea id="exclusions" rows="7"></textarea><button class="primary" id="save-settings">Save backup exclusions</button><details><summary>Built-in Synology exclusions</summary><pre id="builtins"></pre></details></div>
+    </section>
+    <section id="schedule" class="view">
+      <div class="schedule-layout">
+        <div class="panel schedule-hero" id="schedule-hero">
+          <div class="schedule-hero-head">
+            <div><p class="eyebrow">NEXT BACKUP</p>
+              <div class="next-run"><strong id="sched-countdown">—</strong><span id="sched-when">—</span></div></div>
+            <span id="sched-chip" class="sched-chip">—</span>
+          </div>
+          <div class="day-timeline" role="img" aria-label="24-hour timeline showing the scheduled run time and the current time">
+            <div class="day-track">
+              <span class="day-marker run" id="sched-run-marker"><b id="sched-run-label">02:00</b></span>
+              <span class="day-marker now" id="sched-now-marker"><b>Now</b></span>
+            </div>
+            <div class="day-ticks"><span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span></div>
+          </div>
+          <div class="lookback">
+            <div class="lookback-head"><strong>Looks back <span id="sched-hours">48</span> hours</strong><span id="sched-since" class="hint"></span></div>
+            <div class="lookback-bar" aria-hidden="true"><i id="sched-lookback-fill"></i></div>
+            <div class="lookback-scale" aria-hidden="true"><span>7 days ago</span><span>Run time</span></div>
+          </div>
+        </div>
+        <div class="schedule-columns">
+          <div class="panel form-panel schedule-controls">
+            <p class="eyebrow">RUNNER SAFETY</p><h3>Backup engine</h3>
+            <label class="switch"><input type="checkbox" id="runner-enabled"><span></span>Allow backup and dry-run jobs to run</label>
+            <p class="hint">Leave this off while the NAS is recovering or while testing configuration changes. Enabling it does not start a job by itself.</p>
+            <hr>
+            <p class="eyebrow">NIGHTLY WINDOW</p><h3>Backup schedule</h3>
+            <div class="form-grid"><label>Run time<input type="time" id="schedule-time"></label><label>Recent modification window<div class="suffix"><input type="number" id="max-age" min="1" max="720"><span>hours</span></div></label></div>
+            <label class="switch"><input type="checkbox" id="schedule-enabled"><span></span>Enable nightly backups</label>
+            <p class="hint">If the NAS or manager is offline at the run time, the backup starts when it returns, up to six hours later.</p>
+            <div class="save-row"><button class="primary" id="save-schedule">Save safety and schedule</button><span id="schedule-save-state" class="unsaved-state"></span></div>
+          </div>
+          <div class="schedule-side">
+            <div class="panel"><p class="eyebrow">LAST 7 DAYS</p><h3>Backup history</h3>
+              <div id="sched-history" class="day-history"></div>
+              <p class="legend"><span class="dot ok"></span>Completed <span class="dot bad"></span>Failed <span class="dot warn"></span>Stopped <span class="dot none"></span>No run</p></div>
+            <div class="callout"><strong>Low-impact scanning</strong><p>The runner scans locally at a controlled pace, pauses at elevated temperature, and gives rclone only the recent-file list. Uploads use one transfer and one checker.</p></div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section id="archive" class="view">
+      <div class="split folder-workspace"><div class="panel"><div class="panel-head"><div><p class="eyebrow">ONE-OFF ARCHIVE</p><h3>Select folders to package</h3></div></div><p class="hint">Each selected folder becomes a separate dated archive. The original folder is never changed or deleted.</p><p class="archive-legend"><span class="archive-marker" aria-hidden="true"></span> Previously TAR archived — hover over a dot for the date.</p><div id="archive-folder-tree" class="folder-tree" role="tree" aria-label="Folders to archive"></div></div>
+      <div class="panel sticky"><p class="eyebrow">TAR ARCHIVE JOB</p><h3>Package and upload</h3><div id="archive-selection" class="draft-mappings"><p class="draft-empty">No folders selected yet.</p></div><label>Format<select id="archive-format"><option value="tar">TAR package (recommended, low CPU)</option><option value="tar.gz">TAR.GZ compressed archive (higher CPU)</option></select></label><label>Destination<select id="archive-destination-mode"><option value="source">Inside a folder matching the source</option><option value="parent">Directly in the source folder’s parent</option><option value="custom">Use one selected S3 location</option></select></label><label id="archive-custom-destination" hidden>S3 destination prefix<input id="archive-destination" placeholder="e.g. Docker/Persistent"></label><p class="hint" id="archive-destination-help">Inside a matching folder sends <strong>/volume3/Docker/Persistent</strong> to <strong>Docker/Persistent/Persistent_YYYY-MM-DD.tar</strong>.</p><button class="primary full" id="create-archive">Create and upload TAR archives</button></div></div>
+      <div class="callout"><strong>Temporary-space protection</strong><p>The runner checks free space before packaging. A local archive is removed after a successful upload; an unsuccessful archive is retained for diagnosis and retry.</p></div>
+    </section>
+    <section id="activity" class="view"><div class="panel"><div class="panel-head"><div><p class="eyebrow">RUN HISTORY</p><h3>Activity</h3></div><button class="secondary danger" id="activity-cancel" hidden>Cancel active job</button></div><div class="table-wrap"><table><thead><tr><th>Started</th><th>Type</th><th>Status</th><th>Files</th><th>Data</th><th>Duration</th></tr></thead><tbody id="runs"></tbody></table></div></div></section>
+    <section id="destination" class="view"><div class="panel"><div class="panel-head"><div><p class="eyebrow">AWS DESTINATION</p><h3>Browse S3</h3></div><button class="secondary" id="refresh-s3">Refresh</button></div><p class="hint">Read-only view of the configured archive bucket. Browsing never changes or deletes an object. New S3 “folders” appear automatically when an archive is first uploaded to that path.</p><div id="s3-breadcrumbs" class="s3-breadcrumbs"></div><div id="s3-browser" class="s3-browser"><p class="empty">Open this page to load the bucket.</p></div><div class="s3-new-location"><label>New subfolder beneath this location<input id="s3-new-folder" placeholder="e.g. Docker/Persistent"></label><button class="secondary" id="use-new-s3-location">Use new subfolder</button></div><div class="s3-actions"><button class="primary" id="use-s3-location">Use this location for a TAR archive</button></div></div></section>
+    <section id="installation" class="view">
+      <div class="inst-tiles">
+        <article><div class="tile-head"><span class="tile-icon" id="tile-aws-icon"></span><small>AWS connection</small></div><strong id="tile-aws-val">Not checked</strong><span class="hint" id="tile-aws-sub"></span></article>
+        <article><div class="tile-head"><span class="tile-icon" id="tile-runner-icon"></span><small>Runner</small></div><strong id="tile-runner-val">—</strong><span class="hint" id="tile-runner-sub"></span></article>
+        <article><div class="tile-head"><span class="tile-icon" id="tile-safety-icon"></span><small>Safety</small></div><strong id="tile-safety-val">—</strong><span class="hint" id="tile-safety-sub"></span></article>
+        <article><div class="tile-head"><span class="tile-icon" id="tile-version-icon"></span><small>Version</small></div><strong id="tile-version-val">—</strong><span class="hint" id="tile-version-sub"></span></article>
+      </div>
+      <div class="inst-cards">
+        <div class="panel"><div class="panel-head"><h3>Destination</h3><button class="secondary" id="refresh-rclone">Check configuration</button></div><dl id="archive-settings"></dl><div id="rclone-config-status" class="inst-status" hidden></div><details class="inst-details"><summary>Create or replace aws-archive</summary><p class="hint">Credentials go once to the runner, are never shown again or logged, and the request expires after two minutes. This only edits the local rclone configuration; it does not contact or list S3.</p><label>Authentication<select id="rclone-auth"><option value="keys">AWS access keys</option><option value="environment">Environment, profile or IAM role</option></select></label><div id="rclone-key-fields"><label>Access key ID<input id="rclone-access-key" autocomplete="off"></label><label>Secret access key<input id="rclone-secret-key" type="password" autocomplete="new-password"></label></div><label>Confirmation<input id="rclone-confirm" autocomplete="off" placeholder="REPLACE aws-archive"></label><button class="primary" id="configure-rclone">Create or replace remote</button></details></div>
+        <div class="panel"><div class="panel-head"><h3>Runner and updates</h3><button class="secondary" id="restart-runner" type="button">Restart runner</button></div><dl id="runner-settings"></dl><p class="hint">To update: pull the repository, redeploy in Portainer, then restart the runner. If the runner is stopped, start it with DSM Task Scheduler.</p></div>
+      </div>
+      <div class="panel safety-strip"><strong>Permanent protections</strong><ul class="pills" id="safety"></ul></div>
+    </section>
+    <section id="settings" class="view"><div class="performance-grid"><div class="panel performance-card"><p class="eyebrow">LOCAL PROCESSING</p><h3>CPU, scanning and temperature</h3><p class="hint">Controls how hard the NAS works while finding and preparing files. Thermal protection pauses processing at the upper limit and resumes after cooling.</p><div class="form-grid"><label>Entries per scan batch<input type="number" id="scan-batch" min="10" max="1000"></label><label>Pause between batches (ms)<input type="number" id="scan-pause" min="10" max="5000"></label><label>Maximum rclone CPU cores<input type="number" id="cpu-cores" min="1" max="4"></label><span></span><label class="range-field"><span class="range-head"><span>Pause temperature</span><strong class="range-value"><span id="temp-pause-value">80</span>°C</strong></span><input type="range" id="temp-pause" min="45" max="90" step="1"></label><label class="range-field"><span class="range-head"><span>Resume temperature</span><strong class="range-value"><span id="temp-resume-value">72</span>°C</strong></span><input type="range" id="temp-resume" min="40" max="85" step="1"></label></div></div><div class="panel performance-card"><p class="eyebrow">UPLOAD THROUGHPUT</p><h3>Bandwidth and AWS requests</h3><p class="hint">These settings control transfer concurrency and network throughput. They do not change which files are selected.</p><div class="form-grid"><label>Simultaneous transfers<input type="number" id="transfers" min="1" max="4"><span class="hint setting-note">Useful when uploading several files. A single TAR archive remains one transfer.</span></label><label>Parallel checkers<input type="number" id="checkers" min="1" max="8"><span class="hint setting-note">More checkers can speed up batches containing many files.</span></label><label>Bandwidth limit (MiB/s)<input type="number" id="bandwidth" min="0" max="10000"><span class="hint setting-note"><strong>0 is unlimited.</strong> Your current connection is not capped when this is zero.</span></label><label>S3 API requests per second<input type="number" id="request-rate" min="0" max="20"><span class="hint setting-note"><strong>8 recommended; 0 unlimited.</strong> A value of 2 can constrain large multipart uploads.</span></label></div></div></div><div class="panel storage-settings-panel" id="storage-settings"><p class="eyebrow">AWS S3 DEEP ARCHIVE</p><h3>Storage &amp; cost</h3><p class="hint">The Overview estimates monthly cost as stored size × this price. It covers storage only, not requests or early-deletion fees.</p><div class="storage-settings"><label>Price per GB-month (USD)<input type="number" id="cost-rate" min="0.00001" max="1" step="0.00001"></label><label class="switch"><input type="checkbox" id="cost-auto"> Re-measure size weekly</label><span class="hint" id="cost-save-state"></span></div><div class="storage-links" id="storage-links"></div><div class="billing-block"><h4>Actual AWS bill <span class="hint">(optional)</span></h4><p class="hint" id="billing-setup"></p><p class="hint" id="billing-status"></p><button class="secondary" id="refresh-billing" type="button" hidden>Refresh bill now</button></div></div>
+<div class="settings-savebar"><button class="primary" id="save-performance">Save performance limits</button><span id="performance-save-state" class="unsaved-state">Settings are up to date</span></div></section>
+  </main>
+  <div id="toast" role="status"></div>
+  <dialog id="confirm"><h3>Start a real backup?</h3><p>This will upload recent files from enabled mappings. It will not delete or list the remote archive.</p><div class="dialog-actions"><button class="secondary" id="cancel">Cancel</button><button class="primary" id="confirm-run">Start backup</button></div></dialog>
+  <dialog id="run-detail"><p class="eyebrow">RUN DETAILS</p><h3 id="detail-title">Job record</h3><dl id="detail-meta"></dl><div id="detail-summary" class="job-summary"></div><details class="diagnostic-log"><summary>Full diagnostic log</summary><pre id="detail-log"></pre></details><div class="dialog-actions"><button class="secondary danger" id="live-cancel" hidden>Cancel job</button><button class="secondary" id="close-detail" autofocus>Close</button></div></dialog>
+  <dialog id="cancel-help"><p class="eyebrow">CANCELLATION REQUESTED</p><h3>The runner is stopping the job</h3><p>Normal cancellation checks frequently and force-kills an unresponsive rclone upload after ten seconds. If the job is still shown as active after 30 seconds, paste this emergency command into the Synology terminal:</p><pre id="hard-kill-command">for pid in $(ps aux | awk '/[r]clone (copy|copyto)/ {print $2} /[g]lacier-runner.py/ {print $2}'); do sudo kill -KILL "$pid"; done</pre><p class="hint">This stops the Glacier runner and active rclone copy processes. Afterwards, select Glacier Backup Manager in DSM Task Scheduler and click Run.</p><div class="dialog-actions"><button class="secondary" id="close-cancel-help">Close</button><button class="primary" id="copy-hard-kill">Copy command</button></div></dialog>
+  <dialog id="password-reset"><p class="eyebrow">LOCAL RECOVERY</p><h3>Reset the administrator account</h3><p>For security, password recovery requires access to the Synology terminal. This command preserves the existing credentials as a timestamped backup and restarts the app:</p><pre id="password-reset-command">sudo mv /volume1/docker/synology-glacier-backup-manager/data/auth.json /volume1/docker/synology-glacier-backup-manager/data/auth.json.reset-backup-$(date +%Y%m%d-%H%M%S) &amp;&amp; sudo docker restart synology-glacier-backup-manager</pre><p class="hint">When the app returns, refresh this page and create a new administrator username and password. Backup settings and history are not affected.</p><div class="dialog-actions"><button class="secondary" id="close-password-reset">Close</button><button class="primary" id="copy-password-reset">Copy command</button></div></dialog>
+  <script src="/app.js"></script>
+</body></html>
