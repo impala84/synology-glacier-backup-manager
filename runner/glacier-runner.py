@@ -306,32 +306,25 @@ def explicit_file_list(mapping: dict, config: dict, selected_relative: str, canc
     return output.name, count
 
 
-INDEX_GRACE_SECONDS = 30 * 60      # runner-only downtime tolerated before the index must be rebuilt
-REBOOT_GRACE_SECONDS = 3 * 3600    # after a clean NAS reboot the shares were offline too, so nothing could change
+CATCHUP_MAX_SECONDS = 30 * 86400   # longer than this away and the index is rebuilt from scratch
+CATCHUP_MIN_SECONDS = 90           # shorter gaps are covered by the 120 s safety margin below
+CATCHUP_MARGIN = 120
 
 
-def host_boot_time() -> float | None:
-    try:
-        return time.time() - float(Path("/proc/uptime").read_text().split()[0])
-    except (OSError, ValueError, IndexError):
-        return None
+def index_action(last_seen: float, now: float) -> tuple[str, str]:
+    """Decide how to treat the change index after the runner was away.
 
-
-def index_preserved(last_seen: float, now: float, boot: float | None, grace: float = INDEX_GRACE_SECONDS) -> tuple[bool, str]:
-    """Decide whether file-change watches missed anything while the runner was away.
-
-    Events are lost whenever the runner is down but the filesystem is still writable,
-    so a short grace is allowed. If the whole NAS rebooted right after the runner was
-    last seen, its shares were offline too and nothing could have changed, so a longer
-    gap is safe. A reboot long after the runner stopped does not qualify.
+    Filesystem events are lost while the runner is down, so instead of trusting the
+    index blindly (or rebuilding it with a full walk) the runner re-checks only the
+    folders whose modification time moved since it was last seen.
     """
     gap = now - last_seen
     minutes = round(gap / 60)
-    if gap <= grace:
-        return True, f"runner was away {minutes} min (limit {round(grace / 60)} min)"
-    if boot is not None and -120 <= boot - last_seen <= 900 and gap <= REBOOT_GRACE_SECONDS:
-        return True, f"NAS rebooted and the runner was away {minutes} min while its shares were offline"
-    return False, f"runner was away {minutes} min (limit {round(grace / 60)} min) and the NAS did not reboot straight after it stopped"
+    if gap <= CATCHUP_MIN_SECONDS:
+        return "keep", f"runner was away {minutes} min"
+    if gap <= CATCHUP_MAX_SECONDS:
+        return "catchup", f"runner was away {minutes} min; checking folders changed since then"
+    return "rebuild", f"runner was away {minutes} min, too long to catch up"
 
 
 class ChangeIndex:
@@ -362,15 +355,16 @@ class ChangeIndex:
         if "reconciled_at" not in mapping_columns:
             self.db.execute("ALTER TABLE mappings ADD COLUMN reconciled_at REAL")
         self.db.execute("UPDATE changes SET observed_at=? WHERE observed_at IS NULL", (time.time(),))
-        # Preserve the index across brief controlled restarts. A longer watcher
-        # outage requires reconciliation because filesystem events may be missing.
+        self.catchup_since = None
+        self.caught_up = set()
         try:
             previous = load_json(data_dir / "runner-status.json")
             last_seen = datetime.fromisoformat(previous["last_seen"]).timestamp()
-            keep, why = index_preserved(last_seen, time.time(), host_boot_time(), INDEX_GRACE_SECONDS)
-            if keep:
-                if time.time() - last_seen > 300: logging.info("Keeping the change index: %s", why)
-            else:
+            action, why = index_action(last_seen, time.time())
+            if action == "catchup":
+                self.catchup_since = last_seen - CATCHUP_MARGIN
+                logging.info("Keeping the change index: %s", why)
+            elif action == "rebuild":
                 logging.warning("Change index will be rebuilt: %s", why)
                 self.db.execute("UPDATE mappings SET initialized=0")
         except (OSError, ValueError, KeyError, json.JSONDecodeError):
@@ -425,7 +419,55 @@ class ChangeIndex:
         if mapping_id in self.unwatched:
             RUNNER_PROGRESS["index_reason"] = "filesystem watch capacity was unavailable"
             return self.baseline(mapping, config, signature, cancel_check)
+        if getattr(self, "catchup_since", None) is not None and mapping_id not in self.caught_up:
+            RUNNER_PROGRESS["index_reason"] = "catching up on changes made while the runner was away"
+            self.catch_up(mapping, config, self.catchup_since, cancel_check)
+            self.caught_up.add(mapping_id)
         return self.candidates(mapping, config)
+
+    def catch_up(self, mapping: dict, config: dict, since: float, cancel_check=None):
+        """Walk folders only; read files solely in folders touched since the runner was last seen."""
+        mapping_id = mapping["id"]
+        limits = performance_settings(config)
+        batch = limits["scan_batch_entries"]
+        delay = limits["scan_pause_ms"] / 1000
+        thermal = (limits["temperature_pause_c"], limits["temperature_resume_c"])
+        directories, changes, seen, found = [], [], 0, 0
+        RUNNER_PROGRESS.update({"source": mapping["source"], "entries_scanned": 0, "candidate_files": 0})
+        stack = [(Path(validate_source(mapping["source"])), "")]
+        while stack and not STOP:
+            if cancel_check and cancel_check(): raise JobCancelled("Cancelled during catch-up scan")
+            directory, relative_dir = stack.pop()
+            try: touched = directory.stat().st_mtime >= since
+            except OSError: touched = False
+            directories.append((mapping_id, str(directory), relative_dir))
+            self.watch_directory(mapping_id, str(directory), relative_dir)
+            if len(directories) >= 500:
+                self._store_directories(directories); directories.clear()
+            wait_for_safe_temperature(*thermal)
+            try: entries = os.scandir(directory)
+            except OSError as exc:
+                logging.warning("Skipping unreadable folder %s: %s", directory, exc); continue
+            with entries:
+                for entry in entries:
+                    relative = f"{relative_dir}/{entry.name}".lstrip("/")
+                    try:
+                        if entry.is_dir(follow_symlinks=False):
+                            if not excluded(relative, True, mapping, config): stack.append((Path(entry.path), relative))
+                        elif touched and entry.is_file(follow_symlinks=False) and not excluded(relative, False, mapping, config):
+                            stat = entry.stat(follow_symlinks=False)
+                            if max(stat.st_mtime, stat.st_ctime) >= since:
+                                changes.append((mapping_id, relative, stat.st_mtime, stat.st_size, time.time())); found += 1
+                                if len(changes) >= 500: self._store_changes(changes); changes.clear()
+                    except OSError as exc:
+                        logging.warning("Skipping unreadable entry %s: %s", entry.path, exc)
+                    seen += 1
+                    if seen % batch == 0:
+                        RUNNER_PROGRESS.update({"entries_scanned": seen, "candidate_files": found})
+                        time.sleep(delay)
+        if STOP: raise InterruptedError("Runner stopped during catch-up scan")
+        self._store_directories(directories); self._store_changes(changes)
+        logging.info("Catch-up for %s: %d folders' entries read, %d changed files found", mapping["source"], seen, found)
 
     def baseline(self, mapping: dict, config: dict, signature: str, cancel_check=None) -> tuple[str, int]:
         mapping_id = mapping["id"]
@@ -1186,10 +1228,9 @@ def process_control_requests(data_dir: Path, rclone_bin: str):
 
 
 def main():
-    global CHANGE_INDEX, BUCKET, REMOTE, RCLONE_CONFIG, BILLING_CREDENTIALS, INDEX_GRACE_SECONDS
+    global CHANGE_INDEX, BUCKET, REMOTE, RCLONE_CONFIG, BILLING_CREDENTIALS
     parser=argparse.ArgumentParser();parser.add_argument("--data-dir",default="/volume1/docker/synology-glacier-backup-manager/data");parser.add_argument("--log-dir",default="/volume1/docker/synology-glacier-backup-manager/logs");parser.add_argument("--rclone",default="rclone");parser.add_argument("--once",action="store_true")
     parser.add_argument("--billing-credentials",default=os.environ.get("GBM_BILLING_CREDENTIALS"),help="JSON file with a read-only Cost Explorer key (default: next to the rclone config).")
-    parser.add_argument("--index-grace-minutes",type=int,default=int(os.environ.get("GBM_INDEX_GRACE_MINUTES","30")),help="Minutes the runner may be offline before the change index is rebuilt (default 30, or GBM_INDEX_GRACE_MINUTES)")
     parser.add_argument("--remote",default=os.environ.get("GBM_REMOTE"),help="Pinned rclone remote name (or GBM_REMOTE). Recommended.")
     parser.add_argument("--bucket",default=os.environ.get("GBM_BUCKET"),help="Pinned S3 bucket (or GBM_BUCKET). Recommended.")
     parser.add_argument("--rclone-config",default=os.environ.get("GBM_RCLONE_CONFIG"),help="Pinned rclone config path (or GBM_RCLONE_CONFIG). Recommended.")
@@ -1212,7 +1253,6 @@ def main():
     REMOTE, BUCKET, RCLONE_CONFIG = remote, bucket, config_path
     BILLING_CREDENTIALS = args.billing_credentials or os.path.join(os.path.dirname(config_path), "aws-billing.json")
     PROTECTED_PATHS.extend([str(Path(args.data_dir).resolve()), str(Path(args.log_dir).resolve())])
-    INDEX_GRACE_SECONDS = max(5, min(args.index_grace_minutes, 24 * 60)) * 60
     CHANGE_INDEX = ChangeIndex(data)
     log_dir=Path(args.log_dir);log_dir.mkdir(parents=True,exist_ok=True)
     handler=RotatingFileHandler(log_dir/"runner.log",maxBytes=10*1024*1024,backupCount=5)

@@ -30,8 +30,8 @@ Do not start the runner until the Portainer stack has created `config.json` and 
 
 The DSM task must be started manually once on the first installation because no runner process exists yet. After that, deploying a changed runner automatically asks the existing process to reload itself as soon as it is idle. Deploying an identical version does not restart it, and an active job is never interrupted.
 
-## Change-index grace period
+## Change index and catch-up
 
-The runner watches folders for changes and keeps an index of what still needs uploading. If it is away while files can still change, it must rebuild the index with a full walk of every folder, which can take hours on a large NAS. It tolerates **30 minutes** away (`--index-grace-minutes`, or `GBM_INDEX_GRACE_MINUTES`, 5 to 1440).
+The runner watches folders for changes and keeps an index of what still needs uploading. Watching only works while the runner is running. When it starts again after being away (a restart, an update, a reboot), it does not re-walk every folder. It lists the folders and reads files only inside folders whose modification time moved since the runner was last seen, which takes minutes instead of hours. Moved, copied and newly created files are caught this way.
 
-If the whole NAS rebooted shortly after the runner stopped, its shares were offline too, so nothing could change and the index is kept for gaps up to 3 hours. A reboot long after the runner stopped does not count. The decision is written to the runner log ("Keeping the change index" or "Change index will be rebuilt").
+Limits: a file edited in place while the runner was away leaves its folder's time unchanged, so that edit is not noticed until the file changes again. If the runner was away for more than 30 days, the index is rebuilt with a full walk. The decision is written to the runner log ("Keeping the change index" or "Change index will be rebuilt").

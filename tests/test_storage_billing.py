@@ -96,29 +96,33 @@ class CostConfigTests(unittest.TestCase):
             with self.assertRaises(ValueError, msg=repr(rate)): validate_config(config)
 
 
-class IndexGraceTests(unittest.TestCase):
+class IndexCatchUpTests(unittest.TestCase):
     NOW = 1_000_000.0
 
-    def test_brief_runner_restart_keeps_index(self):
-        self.assertTrue(runner.index_preserved(self.NOW - 600, self.NOW, None)[0])
+    def test_brief_gap_keeps_index_without_catch_up(self):
+        self.assertEqual(runner.index_action(self.NOW - 60, self.NOW)[0], "keep")
 
-    def test_long_runner_only_outage_rebuilds(self):
-        keep, why = runner.index_preserved(self.NOW - 4 * 3600, self.NOW, self.NOW - 3600 * 10)
-        self.assertFalse(keep); self.assertIn("did not reboot", why)
+    def test_hours_long_gap_catches_up_instead_of_rebuilding(self):
+        self.assertEqual(runner.index_action(self.NOW - 5 * 3600, self.NOW)[0], "catchup")
 
-    def test_nas_reboot_straight_after_runner_stopped_keeps_index(self):
-        last_seen = self.NOW - 3600           # runner last seen an hour ago
-        boot = last_seen + 240                # NAS booted 4 min after it stopped
-        self.assertTrue(runner.index_preserved(last_seen, self.NOW, boot)[0])
+    def test_very_long_gap_rebuilds(self):
+        self.assertEqual(runner.index_action(self.NOW - 40 * 86400, self.NOW)[0], "rebuild")
 
-    def test_reboot_long_after_runner_stopped_does_not_qualify(self):
-        last_seen = self.NOW - 3600
-        boot = last_seen + 1800               # runner was down 30 min on a live NAS before the reboot
-        self.assertFalse(runner.index_preserved(last_seen, self.NOW, boot)[0])
-
-    def test_reboot_with_very_long_gap_rebuilds(self):
-        last_seen = self.NOW - 5 * 3600
-        self.assertFalse(runner.index_preserved(last_seen, self.NOW, last_seen + 120)[0])
+    def test_catch_up_reads_only_folders_touched_since_the_runner_left(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp, "src"); (root / "touched").mkdir(parents=True); (root / "quiet").mkdir()
+            (root / "touched" / "new.txt").write_text("x")
+            (root / "quiet" / "unrelated.txt").write_text("y")
+            old = self.NOW_OLD = os.stat(root).st_mtime - 3600
+            os.utime(root / "quiet", (old, old)); os.utime(root, (old, old))
+            data = Path(tmp, "data"); data.mkdir()
+            index = runner.ChangeIndex(data)
+            mapping = {"id": "m1", "source": str(root)}
+            with patch.object(runner, "validate_source", lambda p: p), patch.object(runner, "wait_for_safe_temperature", lambda *a: None):
+                index.catch_up(mapping, {}, since=old + 60)
+            found = {row[0] for row in index.db.execute("SELECT relative FROM changes WHERE mapping_id='m1'")}
+            self.assertEqual(found, {"touched/new.txt"})
+            self.assertEqual(len(index.db.execute("SELECT path FROM directories WHERE mapping_id='m1'").fetchall()), 3)
 
 
 if __name__ == "__main__":
