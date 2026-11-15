@@ -137,7 +137,10 @@ def build_command(mapping: dict, config: dict, dry_run: bool, file_list_path: st
                "--transfers", str(limits["transfers"]), "--checkers", str(limits["checkers"]),
                "--buffer-size", "0", "--multi-thread-streams", "0",
                "--stats", "15s", "--stats-one-line", "--log-level", "INFO",
-               "--retries", "1"]
+               "--retries", "1",
+               # Deep Archive objects cannot be edited in place, so a timestamp-only difference would
+               # otherwise force a full re-upload of a file whose contents already match.
+               "--no-update-modtime"]
     if combined_path:
         command.extend(["--combined", combined_path])
     if limits["s3_requests_per_second"]:

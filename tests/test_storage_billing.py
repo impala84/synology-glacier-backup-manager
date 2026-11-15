@@ -125,6 +125,13 @@ class IndexCatchUpTests(unittest.TestCase):
             self.assertEqual(len(index.db.execute("SELECT path FROM directories WHERE mapping_id='m1'").fetchall()), 3)
 
 
+class UploadFlagTests(unittest.TestCase):
+    def test_timestamp_only_differences_do_not_force_reuploads(self):
+        with patch.object(runner, "validate_source", lambda p: p), patch.object(runner, "validate_prefix", lambda p: p):
+            command = runner.build_command({"source": "/volume3/Alice", "destination": "Alice"}, json.loads(json.dumps(DEFAULT_CONFIG)), False, "/tmp/list", "rclone")
+        self.assertIn("--no-update-modtime", command)
+
+
 class FullScanIntervalTests(unittest.TestCase):
     def _index(self, reconciled_ago):
         import sqlite3, threading
