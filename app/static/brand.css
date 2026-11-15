@@ -184,10 +184,27 @@
 }
 
 @media (max-width: 850px) {
+  /* The sidebar becomes a fixed top bar that is always on screen. */
+  aside {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 60;
+    height: auto;
+    padding: max(10px, env(safe-area-inset-top)) 16px 10px;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06), 0 6px 18px rgba(8, 20, 34, 0.25);
+  }
+
+  main {
+    padding-top: calc(84px + env(safe-area-inset-top));
+  }
+
   .mobile-brand-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex: none;
   }
 
   .mobile-brand-row .brand {
@@ -196,6 +213,7 @@
 
   .menu-toggle {
     display: grid;
+    align-content: center;
     gap: 5px;
     width: 46px;
     height: 42px;
@@ -210,30 +228,51 @@
     height: 2px;
     border-radius: 2px;
     background: white;
+    transition: transform 0.18s ease, opacity 0.18s ease;
   }
 
-  aside nav {
-    display: none;
-    margin-top: 16px;
-    overflow: visible;
-  }
+  aside.menu-open .menu-toggle span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  aside.menu-open .menu-toggle span:nth-child(2) { opacity: 0; }
+  aside.menu-open .menu-toggle span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
+  aside nav,
   .sidebar-status {
     display: none;
-    margin-top: 18px;
   }
 
-  aside.menu-open .sidebar-status {
-    display: block;
+  /* Open: the bar grows into a full-height menu. Links scroll, live status stays pinned at the bottom. */
+  aside.menu-open {
+    bottom: 0;
+    height: 100dvh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: max(14px, env(safe-area-inset-bottom));
   }
 
   aside.menu-open nav {
     display: grid;
     grid-template-columns: 1fr;
+    align-content: start;
+    flex: 1 1 auto;
+    min-height: 0;
+    margin-top: 14px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  aside.menu-open .sidebar-status {
+    display: block;
+    flex: none;
+    margin-top: 12px;
   }
 
   aside nav button {
     width: 100%;
     white-space: normal;
+  }
+
+  body:has(aside.menu-open) {
+    overflow: hidden;
   }
 }
