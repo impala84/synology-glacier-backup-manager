@@ -105,8 +105,9 @@ function renderSchedule(){const st=stateData?.schedule_status;if(!st||!$('#sched
   $('#sched-when').textContent=active?`${tomorrow?'Tomorrow':'Today'} at ${d.time}${st.tz?` · ${st.tz}`:''}`:d.paused?'No jobs will start until the backup engine is allowed to run':'Nightly backups are switched off';
   const chip=$('#sched-chip');chip.textContent=d.paused?'Engine paused':d.enabled?'Scheduled':'Schedule off';chip.className='sched-chip'+(d.paused?' warn':d.enabled?'':' off');
   $('#schedule-hero').classList.toggle('inactive',!active);
-  $('#sched-run-marker').style.left=`${runMin/14.4}%`;$('#sched-now-marker').style.left=`${nowMin/14.4}%`;$('#sched-run-label').textContent=d.time;
-  const run=$('#sched-run-marker'),now=$('#sched-now-marker');now.classList.toggle('near',Math.abs(runMin-nowMin)<60);
+  {const tzn=schedTz(),opts={timeZone:tzn||undefined,weekday:'short',hour:'2-digit',minute:'2-digit',hourCycle:'h23'},fmt=new Intl.DateTimeFormat('en-GB',opts),nowTs=Date.parse(st.now)+(Date.now()-fetchedAt),nextT=nowTs+until*60000,prevT=nextT-86400000,pct=Math.max(0,Math.min(100,(1-until/1440)*100)),hh=String(Math.floor(nowMin/60)).padStart(2,'0'),mm=String(Math.floor(nowMin%60)).padStart(2,'0');
+    $('#cd-prev').textContent=fmt.format(prevT).replace(',','');$('#cd-next').textContent=fmt.format(nextT).replace(',','');
+    $('#cd-fill').style.width=`${pct}%`;$('#cd-now').style.left=`${pct}%`;const nl=$('#cd-now-label');nl.style.left=`${Math.min(92,Math.max(8,pct))}%`;nl.textContent=`Now ${hh}:${mm}`;}
   $('#sched-hours').textContent=d.hours;$('#sched-lookback-fill').style.width=`${Math.min(100,d.hours/168*100)}%`;
   const tz=schedTz(),nextTs=Date.parse(st.now)+(Date.now()-fetchedAt)+until*60000;
   $('#sched-since').textContent=tz?`Files changed since ${new Intl.DateTimeFormat('en-GB',{timeZone:tz,weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}).format(nextTs-d.hours*3600000)} are considered`:`Files changed in the ${d.hours} hours before the run are considered`+(d.hours>168?' (bar capped at 7 days)':'');
